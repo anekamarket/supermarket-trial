@@ -24,7 +24,6 @@
             --rounded-sm: 0.35rem;
             --rounded: 0.75rem;
             --rounded-lg: 1rem;
-            --donation: #6f42c1;
         }
 
         * {
@@ -446,14 +445,6 @@
             color: var(--white);
         }
 
-        .btn-donation {
-            background-color: var(--donation);
-        }
-
-        .btn-donation:hover {
-            background-color: #5a32a3;
-        }
-
         /* Tab Styles */
         .tabs {
             display: flex;
@@ -822,16 +813,6 @@
         /* Member Badge */
         .member-badge {
             background-color: var(--info);
-            color: white;
-            padding: 2px 6px;
-            border-radius: 10px;
-            font-size: 0.7rem;
-            margin-left: 6px;
-        }
-
-        /* Donation Badge */
-        .donation-badge {
-            background-color: var(--donation);
             color: white;
             padding: 2px 6px;
             border-radius: 10px;
@@ -1262,11 +1243,6 @@
                     </div>
                 </div>
                 
-                <div class="form-group">
-                    <label class="form-label">Donasi LAZISNU (opsional)</label>
-                    <input type="number" id="donationAmount" class="form-control" placeholder="Masukkan jumlah donasi" value="0" min="0">
-                </div>
-                
                 <div id="orderItems"></div>
                 
                 <div class="note-input">
@@ -1286,10 +1262,6 @@
                      <div id="taxRow" class="summary-row" style="display: none;">
                         <span>Pajak (0%):</span>
                         <span id="orderTax">Rp 0</span>
-                    </div>
-                    <div id="donationRow" class="summary-row">
-                        <span>Donasi LAZISNU:</span>
-                        <span id="orderDonation">Rp 0</span>
                     </div>
                     <div class="summary-row total-row">
                         <span>Total:</span>
@@ -1436,7 +1408,6 @@
             <div class="modal-body" style="padding: 0 16px 16px 16px;">
                  <div class="tabs">
                     <div class="tab active" data-tab="salesReport"><i class="fas fa-chart-line"></i> Laporan Penjualan</div>
-                    <div class="tab" data-tab="donationsReport"><i class="fas fa-hand-holding-heart"></i> Laporan Donasi LAZISNU</div>
                 </div>
                 
                 <div class="tab-content active" id="salesReportTab">
@@ -1456,9 +1427,6 @@
                     <div id="reportResults" class="mt-3 printable-area"></div>
                 </div>
 
-                <div class="tab-content" id="donationsReportTab">
-                     <div id="donationReportResults" class="mt-3 printable-area"></div>
-                </div>
             </div>
             <div class="modal-footer">
                 <button class="btn btn-warning modal-close-btn">Tutup</button>
@@ -1926,7 +1894,7 @@
             shifts = JSON.parse(localStorage.getItem(STORAGE_KEYS.SHIFTS)) || []; // [BARU] Load data shift
             currentUser = JSON.parse(localStorage.getItem(STORAGE_KEYS.USER)) || null;
             currentOrder = JSON.parse(localStorage.getItem(STORAGE_KEYS.CURRENT_ORDER)) || {
-                items: [], subtotal: 0, total: 0, discount: 0, donation: 0, tax: 0, note: '', memberId: null
+                items: [], subtotal: 0, total: 0, discount: 0, tax: 0, note: '', memberId: null
             };
 
             $('#currentYear').text(new Date().getFullYear());
@@ -1951,7 +1919,7 @@
             $(document).on('click', '.delete-product', handleDeleteProductClick);
             $(document).on('click', '.remove-item', handleRemoveItemClick);
             $(document).on('input', '.item-qty', handleQtyChange);
-            $('#donationAmount, #orderNote').on('input', updateOrder);
+            $('#orderNote').on('input', updateOrder);
             
             // Member search events
             $('#memberSearchInput').on('input', handleMemberSearch);
@@ -2233,14 +2201,12 @@
             const taxText = `Pajak (${taxPercent}%)`;
             currentOrder.tax = taxPercent > 0 ? subtotalAfterDiscount * (taxPercent / 100) : 0;
 
-            currentOrder.donation = parseFloat($('#donationAmount').val()) || 0;
-            currentOrder.total = subtotalAfterDiscount + currentOrder.tax + currentOrder.donation;
+            currentOrder.total = subtotalAfterDiscount + currentOrder.tax;
             
             localStorage.setItem(STORAGE_KEYS.CURRENT_ORDER, JSON.stringify(currentOrder));
             
             const $orderItems = $('#orderItems').empty();
             $('#orderCount').text(`(${currentOrder.items.length} item)`);
-            $('#orderDonation').text(formatCurrency(currentOrder.donation));
             
             $('#discountRow').toggle(currentOrder.discount > 0).find('span:first-child').text(discountText);
             $('#orderDiscount').text(`-${formatCurrency(currentOrder.discount)}`);
@@ -2268,11 +2234,10 @@
         }
 
         function resetOrder() {
-            currentOrder = { items: [], subtotal: 0, total: 0, discount: 0, donation: 0, tax: 0, note: '', memberId: null };
+            currentOrder = { items: [], subtotal: 0, total: 0, discount: 0, tax: 0, note: '', memberId: null };
             localStorage.setItem(STORAGE_KEYS.CURRENT_ORDER, JSON.stringify(currentOrder));
             updateOrder();
             $('#orderNote, #memberSearchInput').val('');
-            $('#donationAmount').val('0');
         }
 
         // --- [BARU] FUNGSI MANAJEMEN SHIFT ---
@@ -2336,7 +2301,6 @@
 
             const shiftOrders = orders.filter(o => o.shiftId === activeShift.id);
             const cashSales = shiftOrders.filter(o => o.paymentMethod === 'cash').reduce((sum, o) => sum + o.total, 0);
-            const cashDonations = shiftOrders.filter(o => o.paymentMethod === 'cash').reduce((sum, o) => sum + (o.donation || 0), 0);
             
             const expectedCash = activeShift.startCash + cashSales;
             const difference = endCash - expectedCash;
@@ -2361,7 +2325,6 @@
 
             const shiftOrders = orders.filter(o => o.shiftId === activeShift.id);
             const cashSales = shiftOrders.filter(o => o.paymentMethod === 'cash').reduce((sum, o) => sum + o.total, 0);
-            const cashDonations = shiftOrders.filter(o => o.paymentMethod === 'cash').reduce((sum, o) => sum + (o.donation || 0), 0);
             
             const expectedCash = activeShift.startCash + cashSales;
             const difference = endCash - expectedCash;
@@ -2371,7 +2334,6 @@
                 endTime: new Date().toISOString(),
                 endCash: endCash,
                 totalCashSales: cashSales,
-                totalCashDonations: cashDonations,
                 expectedCash: expectedCash,
                 cashDifference: difference,
                 status: 'closed'
@@ -2979,7 +2941,6 @@
                     <div class="receipt-item"><span>Subtotal</span> <span>${formatCurrency(order.subtotal)}</span></div>
                     ${order.discount > 0 ? `<div class="receipt-item"><span>Diskon</span> <span>-${formatCurrency(order.discount)}</span></div>` : ''}
                     ${order.tax > 0 ? `<div class="receipt-item"><span>Pajak</span> <span>${formatCurrency(order.tax)}</span></div>` : ''}
-                    ${order.donation > 0 ? `<div class="receipt-item"><span>Donasi LAZISNU</span> <span>${formatCurrency(order.donation)}</span></div>` : ''}
                     <div class="receipt-item" style="font-weight:bold; font-size: 14px;"><span>TOTAL</span> <span>${formatCurrency(order.total)}</span></div>
                     <div class="receipt-item"><span>${{ cash: 'Tunai', transfer: 'Transfer', ewallet: 'E-Wallet' }[order.paymentMethod]}</span> <span>${formatCurrency(order.paymentAmount)}</span></div>
                     <div class="receipt-item"><span>Kembali</span> <span>${formatCurrency(order.change)}</span></div>
@@ -3067,7 +3028,6 @@
                 `<div class="summary-row" style="border-top: 1px dashed #ddd; margin-top: 8px; padding-top: 8px;"><span>Subtotal:</span><span>${formatCurrency(currentOrder.subtotal)}</span></div>` +
                 (currentOrder.discount > 0 ? `<div class="summary-row"><span>${discountText}</span><span>-${formatCurrency(currentOrder.discount)}</span></div>` : '') +
                 (currentOrder.tax > 0 ? `<div class="summary-row"><span>${taxText}</span><span>${formatCurrency(currentOrder.tax)}</span></div>` : '') +
-                (currentOrder.donation > 0 ? `<div class="summary-row"><span>Donasi LAZISNU:</span><span>${formatCurrency(currentOrder.donation)}</span></div>` : '') +
                 `<div class="summary-row total-row"><span>Total:</span><span>${formatCurrency(currentOrder.total)}</span></div>`;
             $('#orderSummary').html(summaryHTML);
         }
@@ -3254,13 +3214,12 @@
             if (reportType === 'salesReport') {
                 const filteredOrders = orders.filter(o => moment(o.date).isBetween(startDate, endDate));
                 if (filteredOrders.length === 0) return $('#reportResults').html('<div class="empty-state"><p>Tidak ada data penjualan pada periode ini.</p></div>');
-                let totalSales = 0, totalDiscount = 0, totalTax = 0, totalDonation = 0, totalTransactions = filteredOrders.length;
+                let totalSales = 0, totalDiscount = 0, totalTax = 0, totalTransactions = filteredOrders.length;
                 let topProducts = {};
                 filteredOrders.forEach(order => {
                     totalSales += order.total;
                     totalDiscount += order.discount || 0;
                     totalTax += order.tax || 0;
-                    totalDonation += order.donation || 0;
                     order.items.forEach(item => {
                         topProducts[item.product.name] = (topProducts[item.product.name] || 0) + item.quantity;
                     });
@@ -3277,31 +3236,6 @@
                     <h5 class="mt-3">Produk Terlaris</h5>
                     <ul class="list-group">${sortedProducts.map(p => `<li class="list-group-item">${p[0]} (${p[1]} terjual)</li>`).join('')}</ul>
                 `;
-            } else if (reportType === 'donationsReport') {
-                const donationOrders = orders.filter(o => o.donation > 0 && moment(o.date).isBetween(startDate, endDate));
-                if (donationOrders.length === 0) return $('#donationReportResults').html('<div class="empty-state"><p>Tidak ada data donasi pada periode ini.</p></div>');
-                const totalDonation = donationOrders.reduce((sum, o) => sum + o.donation, 0);
-                
-                let tableHTML = `<table class="data-table"><thead><tr><th>Tanggal</th><th>No. Transaksi</th><th>Kasir</th><th>Jumlah Donasi</th></tr></thead><tbody>`;
-                donationOrders.forEach(o => {
-                    tableHTML += `<tr>
-                        <td>${moment(o.date).format('DD/MM/YY HH:mm')}</td>
-                        <td>${o.id}</td>
-                        <td>${o.cashier.name}</td>
-                        <td>${formatCurrency(o.donation)}</td>
-                    </tr>`;
-                });
-                tableHTML += `</tbody></table>`;
-                
-                reportHTML = `
-                    <div class="recap-summary-card">
-                        <div class="title">Total Donasi Terkumpul</div>
-                        <div class="value">${formatCurrency(totalDonation)}</div>
-                    </div>
-                    ${tableHTML}
-                `;
-                $('#donationReportResults').html(reportHTML);
-                return;
             }
             $('#reportResults').html(reportHTML);
         }
